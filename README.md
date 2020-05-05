@@ -10,7 +10,7 @@ Aby uruchomić powyższe pliki, konieczne jest zainstalowanie biblioteki FEniCS.
 
 Konieczne jest również zainstalowanie bibliotek: `numpy, petsc4py` oraz `tqdm`.
 
-**UWAGA NA PROBLEMY ZE ZGODNOŚCIĄ!**
+**UWAGA NA PROBLEMY ZE ZGODNOŚCIĄ!**  
 Powyższy kod tworzony był na platformie docker. W celu uruchomienia kodu zaleca się zainstalowanie biblioteki FEniCS w wersji 2018.1.0 i korzystanie z niej przez tę platformę.
 
 
