@@ -27,3 +27,6 @@ Kompilacja nastąpi, jeżeli w folderze roboczym znajdować się będą foldery 
 Folder zawiera podfoldery siatek stworzonych za pomocą programu GMSH (w folderze siatki_gmsh) oraz przekonwertowane na format akceptowany dla platformy FEniCS (w folderze siatki_xml) 
     
 Aby móc otworzyć pliki .msh należy zainstalować program Gmsh. Więcej informacji na stronie: [http://gmsh.info]. Pliki `.xml` są otwierane z poziomu FEniCSa. 
+
+
+![](T_pressure.avi)
