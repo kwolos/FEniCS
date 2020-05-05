@@ -1,5 +1,7 @@
 W repozytorium `FEniCS` znajduje się: 
 
+- praca dyplomowa, do której odnosi się model.
+
 - plik `unsteady_Stokes_diploma_wariantA.py`
     - plik ten zawiera kod, zapisany za pomocą Pythonowej składni realizujący warunek (3.29) z pracy dyplomowej. 
     
@@ -28,5 +30,4 @@ Folder zawiera podfoldery siatek stworzonych za pomocą programu GMSH (w folderz
     
 Aby móc otworzyć pliki .msh należy zainstalować program Gmsh. Więcej informacji na stronie: [http://gmsh.info]. Pliki `.xml` są otwierane z poziomu FEniCSa. 
 
-
-![](T_pressure.avi)
+Wyniki symulacji przedstawiają pliki: `T_pressure.avi` oraz `T_velocity.avi`. 
