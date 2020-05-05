@@ -1,13 +1,13 @@
 W folderze kod_realizujący znajduje się: 
 
-+ plik unsteady_Stokes_diploma_wariantA.py 
-    -- plik ten zawiera kod, zapisany za pomocą Pythonowej składni realizujący warunek (3.29) z pracy dyplomowej. 
+- plik unsteady_Stokes_diploma_wariantA.py 
+    - plik ten zawiera kod, zapisany za pomocą Pythonowej składni realizujący warunek (3.29) z pracy dyplomowej. 
     
-+ plik unsteady_Stokes_diploma_wariantB.py 
-    -- plik ten zawiera kod, zapisany za pomocą Pythonowej składni realizujący warunek (3.30) z pracy dyplomowej. 
+- plik unsteady_Stokes_diploma_wariantB.py 
+    - plik ten zawiera kod, zapisany za pomocą Pythonowej składni realizujący warunek (3.30) z pracy dyplomowej. 
     
 Aby uruchomić powyższe pliki, konieczne jest zainstalowanie biblioteki FEniCS. Instrukcja: 
-https://fenicsproject.org/download/
+https:[//fenicsproject.org/download/]
 
 konieczne jest również zainstalowanie bibliotek: 
 numpy, petsc4py oraz tqdm 
