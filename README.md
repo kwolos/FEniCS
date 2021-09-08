@@ -1,6 +1,6 @@
 W repozytorium `FEniCS` znajduje się: 
 
-- praca dyplomowa, do której odnosi się model.
+- plik `Praca_dyplomowa.pdf`, do której odnosi się model.
 
 - plik `unsteady_Stokes_diploma_wariantA.py`
     - plik ten zawiera kod, zapisany za pomocą Pythonowej składni realizujący warunek (3.29) z pracy dyplomowej. 
