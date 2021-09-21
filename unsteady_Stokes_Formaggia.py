@@ -201,7 +201,7 @@ for qqq in trange(int(num_steps)):
     # we suppose that we have knowledge about inflows/outflows (only)
     Q_1 = 50 * np.sin(qqq/num_steps * 2 * np.pi)
     Q_2 = 20 - 40 * np.sin(qqq/num_steps * 2 * np.pi)
-    Q_3 = 50
+    Q_3 = 50 + 40 * np.cos(qqq/num_steps * 2 * np.pi - np.pi/2)
 
     u0, p0 = _w0.split()
 
@@ -230,8 +230,8 @@ for qqq in trange(int(num_steps)):
     un_temp = project(u0 + b1*u1 + b2*u2 + b3*u3, ME0.sub(0).collapse())
     pn_temp = project(p0 + b1*p1 + b2*p2 + b3*p3, ME0.sub(1).collapse())
 
-    un.vector()[:] = un_temp.vector()
-    pn.vector()[:] = pn_temp.vector() 
+    un.assign(un_temp)
+    pn.assign(pn_temp)
 
     xdmf_file0.write(un, t)
     xdmf_file1.write(pn, t)
