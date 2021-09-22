@@ -6,14 +6,14 @@ from tqdm import trange
 
 set_log_level(40)
 # pylint: disable=unbalanced-tuple-unpacking
-
+RKSolver
 
 # basic data connected with the simulation 
 T           = 1.0       # time of the simulation
-dt          = 0.01      # time step 
-nu          = 1         # dynamic viscosity [kg/m/s] 
+dt          = 0.001      # time step 
+nu_         = 1         # dynamic viscosity [kg/m/s] 
 num_steps   = T/dt      # number of steps 
-mRK4        = 4         # number of steps in RK4 scheme in OIFS procedure
+mRK4        = 2         # number of steps in RK4 scheme in OIFS procedure
 h           = dt/mRK4   # step in RK4 scheme 
 
 # flow through the inputs/outputs (X - geometry, numbering from 0)
@@ -23,7 +23,7 @@ Q_3 = 0
 
 # backward method - coefficients 
 def BDF(J):
-    alpha = np.zeros(4) 
+    alpha = np.zeros(5) 
     if J == 1: 
         alpha[0:2] = 1, 1 
         
@@ -38,14 +38,33 @@ def BDF(J):
     
     return alpha
 
+f_ODE = lambda u:  - dot(u, nabla_grad(u))
+
+def RK4_model(un_, un0, mRK4):
+
+    for i in range(mRK4):       
+        if i == 0:
+            un_.vector()[:] = un0.vector()
+
+        k1 = project(f_ODE(un_),           ME0.sub(0).collapse())
+        k2 = project(f_ODE(un_ + h/2*k1),  ME0.sub(0).collapse())       
+        k3 = project(f_ODE(un_ + h/2*k2),  ME0.sub(0).collapse())
+        k4 = project(f_ODE(un_ + h*k3),    ME0.sub(0).collapse())
+        
+        un_ = project(un_ + h/6 * (k1 + 2*k2 + 2*k3 + k4), ME0.sub(0).collapse())
+        
+        print(un_.vector()[:])
+    
+    return(un_)
+
 
 alpha = BDF(1)
 
 
 # loading mesh 
-mesh = Mesh('siatki/siatki_xml/geometria_X/X.xml')
-cd   = MeshFunction('size_t', mesh, 'siatki/siatki_xml/geometria_X/X_physical_region.xml')      # inside
-fd   = MeshFunction('size_t', mesh, 'siatki/siatki_xml/geometria_X/X_facet_region.xml')         # boundaries 
+mesh = Mesh('siatki/siatki_xml/geometria_X_gestsza/X.xml')
+cd   = MeshFunction('size_t', mesh, 'siatki/siatki_xml/geometria_X_gestsza/X_physical_region.xml')      # inside
+fd   = MeshFunction('size_t', mesh, 'siatki/siatki_xml/geometria_X_gestsza/X_facet_region.xml')         # boundaries 
 
 # defining function spaces for subproblems 
 
@@ -85,7 +104,7 @@ w2, p2  = split(_w2)
 _w3     = Function(ME0) 
 w3, p3  = split(_w3)
 
-# previous time step 
+# previous time step
 _un     = Function(ME0)
 un, pn  = split(_un)
 
@@ -96,8 +115,17 @@ var_pn  = Expression('0', degree = 1)
 un      = project(var_un, ME0.sub(0).collapse())
 pn      = project(var_pn, ME0.sub(1).collapse())
 
-un_     = project(var_un, ME0.sub(0).collapse())
-pn_     = project(var_pn, ME0.sub(1).collapse())
+un_1     = project(var_un, ME0.sub(0).collapse())
+pn_1     = project(var_pn, ME0.sub(1).collapse())
+un_1prev = project(var_un, ME0.sub(0).collapse())
+
+un_2     = project(var_un, ME0.sub(0).collapse())
+pn_2     = project(var_pn, ME0.sub(1).collapse())
+un_2prev = project(var_un, ME0.sub(0).collapse())
+
+un_3     = project(var_un, ME0.sub(0).collapse())
+pn_3     = project(var_pn, ME0.sub(1).collapse())
+un_3prev = project(var_un, ME0.sub(0).collapse())
 
 
 # imposing on the walls no-slip BC == zero Dirichlet BC 
@@ -111,16 +139,16 @@ dx = Measure('dx', domain=mesh, subdomain_data=cd)
 f  = Expression(('0', '0'), degree=2)
 
 # defining constant values which occurs in weak formulations 
-alpha[0] = Constant(alpha[0])
+al0      = Constant(alpha[0])
 k        = Constant(dt)
-nu       = Constant(nu)
+nu       = Constant(nu_)
 
 # normal vector 
 n       = FacetNormal(mesh)
 
 ## three Stokes subproblems
 # I 
-F1 = alpha[0]/k * dot(w1, v1) * dx \
+F1 = al0/k * dot(w1, v1) * dx \
     + nu * inner(grad(w1), grad(v1)) * dx \
         - p1 * div(v1) * dx \
             + dot(v1, n) * ds(1) \
@@ -135,7 +163,7 @@ F21 = assemble(dot(u1, n) * ds(2))
 F31 = assemble(dot(u1, n) * ds(3))
 
 # II
-F2 = alpha[0]/k * dot(w2, v2) * dx \
+F2 = al0/k * dot(w2, v2) * dx \
     + nu * inner(grad(w2), grad(v2)) * dx \
         - p2 * div(v2) * dx \
             + dot(v2, n) * ds(2) \
@@ -150,7 +178,7 @@ F22 = assemble(dot(u2, n) * ds(2))
 F32 = assemble(dot(u2, n) * ds(3))
 
 # III 
-F3 = alpha[0]/k * dot(w3, v3) * dx \
+F3 = al0/k * dot(w3, v3) * dx \
     + nu * inner(grad(w3), grad(v3)) * dx \
         - p3 * div(v3) * dx \
             + dot(v3, n) * ds(3) \
@@ -190,24 +218,28 @@ flowrate3 = assemble(dot(u3, n) * ds(1) + dot(u3, n) * ds(2) + dot(u3, n) * ds(3
 
 # ---- step 0 ------ 
 t = 0.0 
+al1 = Constant(alpha[1])
+al2 = Constant(alpha[2])
+al3 = Constant(alpha[3])
 
-F0 = alpha[0]/k * dot(w0, v0) * dx \
+F0 = al0/k * dot(w0, v0) * dx \
     + nu * inner(grad(w0), grad(v0)) * dx \
         - p0 * div(v0) * dx \
             - dot(f, v0) * dx \
-                - alpha[1]/k * dot(un_, v0) * dx \
-                    + q0 * div(w0) * dx 
-
-f_ODE = lambda u:  - dot(u, nabla_grad(u))
-
-for qqq in trange(int(100)):
+                - al1/k * dot(un_1, v0) * dx \
+                    + q0 * div(w0) * dx
+                    # - al2/k * dot(un_2, v0) * dx \
+                        # - al3/k * dot(un_3, v0) * dx \
+                             
+# %%
+for qqq in trange(int(num_steps)):
     
     solve(F0 == 0, _w0, [bcu_walls])
-    
+
     # we suppose that we have knowledge about inflows/outflows (only)
-    Q_1 = 50 * np.sin(qqq/num_steps * 2 * np.pi)
-    Q_2 = 20 - 40 * np.sin(qqq/num_steps * 2 * np.pi)
-    Q_3 = 50
+    Q_1 = 10
+    Q_2 = 10
+    Q_3 = 10
 
     u0, p0 = _w0.split()
 
@@ -236,23 +268,37 @@ for qqq in trange(int(100)):
     un_temp = project(u0 + b1*u1 + b2*u2 + b3*u3, ME0.sub(0).collapse())
     pn_temp = project(p0 + b1*p1 + b2*p2 + b3*p3, ME0.sub(1).collapse())
 
-    # these (whole) solution will be saved 
-    un.vector()[:] = un_temp.vector()   
-    pn.vector()[:] = pn_temp.vector()   
     
+    # in BDF_3 we need to store last 3 solution in memory 
+    # un   -- given solution 
+    # un_1 -- previosu solutions (-1) un_2 -- prev sol. (-2) and so on... 
+
+
     # here we count solution of OIFS step, which is used in F0 variational form 
-    for i in range(mRK4):       
-        if i == 0:
-            un_.vector()[:] = un.vector()
+ 
+    # if qqq > 2: 
+    #     un_3prev.vector()[:] = un_2.vector()
+    #     _un_3 = RK4_model(un_3, un_3prev, 3*h)
+    #     un_3.assign(_un_3)
+    
+    # if qqq > 1: 
+    #     un_2prev.vector()[:] = un_1prev.vector() 
+    #     _un_2 = RK4_model(un_2, un_2prev, 2*mRK4)
+    #     un_2.assign(_un_2)
+    
+    if qqq > 0:
+        un_1prev.vector()[:] = un.vector()
+        _un_1 = RK4_model(un_1, un_1prev, mRK4)
+        un_1.assign(_un_1)
 
-        k1 = project(f_ODE(un_),           ME0.sub(0).collapse())
-        k2 = project(f_ODE(un_ + h/2*k1),  ME0.sub(0).collapse())
-        k3 = project(f_ODE(un_ + h/2*k2),  ME0.sub(0).collapse())
-        k4 = project(f_ODE(un_ + h*k3),    ME0.sub(0).collapse())
-        print(k1.vector()[:])
-        un_ = project(un_ + h/6 * (k1 + 2*k2 + 2*k3 + k4), ME0.sub(0).collapse())
+    # these (whole) solution will be saved 
+    un.assign(un_temp)
+    pn.assign(pn_temp)
 
-    print(un_.vector()[:])
+    # print solution
+    print("solution", un.vector()[:])
+    
+
     xdmf_file0.write(un, t)
     xdmf_file1.write(pn, t)
 
