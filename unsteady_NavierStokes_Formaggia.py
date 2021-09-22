@@ -6,12 +6,11 @@ from tqdm import trange
 
 set_log_level(40)
 # pylint: disable=unbalanced-tuple-unpacking
-RKSolver
 
 # basic data connected with the simulation 
 T           = 1.0       # time of the simulation
-dt          = 0.001      # time step 
-nu_         = 1         # dynamic viscosity [kg/m/s] 
+dt          = 0.01      # time step 
+nu_         = 0.001        # dynamic viscosity [kg/m/s] 
 num_steps   = T/dt      # number of steps 
 mRK4        = 2         # number of steps in RK4 scheme in OIFS procedure
 h           = dt/mRK4   # step in RK4 scheme 
@@ -112,20 +111,21 @@ un, pn  = split(_un)
 var_un  = Expression(('0', '0'), degree = 2)
 var_pn  = Expression('0', degree = 1)
 
-un      = project(var_un, ME0.sub(0).collapse())
-pn      = project(var_pn, ME0.sub(1).collapse())
+# using large meshes -- better to use interpolate than project 
+un      = interpolate(var_un, ME0.sub(0).collapse())
+pn      = interpolate(var_pn, ME0.sub(1).collapse())
 
-un_1     = project(var_un, ME0.sub(0).collapse())
-pn_1     = project(var_pn, ME0.sub(1).collapse())
-un_1prev = project(var_un, ME0.sub(0).collapse())
+un_1     = interpolate(var_un, ME0.sub(0).collapse())
+pn_1     = interpolate(var_pn, ME0.sub(1).collapse())
+un_1prev = interpolate(var_un, ME0.sub(0).collapse())
 
-un_2     = project(var_un, ME0.sub(0).collapse())
-pn_2     = project(var_pn, ME0.sub(1).collapse())
-un_2prev = project(var_un, ME0.sub(0).collapse())
+un_2     = interpolate(var_un, ME0.sub(0).collapse())
+pn_2     = interpolate(var_pn, ME0.sub(1).collapse())
+un_2prev = interpolate(var_un, ME0.sub(0).collapse())
 
-un_3     = project(var_un, ME0.sub(0).collapse())
-pn_3     = project(var_pn, ME0.sub(1).collapse())
-un_3prev = project(var_un, ME0.sub(0).collapse())
+un_3     = interpolate(var_un, ME0.sub(0).collapse())
+pn_3     = interpolate(var_pn, ME0.sub(1).collapse())
+un_3prev = interpolate(var_un, ME0.sub(0).collapse())
 
 
 # imposing on the walls no-slip BC == zero Dirichlet BC 
@@ -154,7 +154,7 @@ F1 = al0/k * dot(w1, v1) * dx \
             + dot(v1, n) * ds(1) \
                 + q1 * div(w1) * dx 
 
-solve(F1 == 0, _w1, [bcu_walls])
+solve(F1 == 0, _w1, [bcu_walls], solver_parameters={'newton_solver': {'linear_solver': 'mumps'}})
 u1, p1 = _w1.split() 
 
 # count integrals for the matrix 
@@ -169,7 +169,7 @@ F2 = al0/k * dot(w2, v2) * dx \
             + dot(v2, n) * ds(2) \
                 + q2 * div(w2) * dx 
 
-solve(F2 == 0, _w2, [bcu_walls])
+solve(F2 == 0, _w2, [bcu_walls],  solver_parameters={'newton_solver': {'linear_solver': 'mumps'}})
 u2, p2 = _w2.split() 
 
 # count integrals for the matrix 
@@ -184,7 +184,7 @@ F3 = al0/k * dot(w3, v3) * dx \
             + dot(v3, n) * ds(3) \
                 + q3 * div(w3) * dx 
 
-solve(F3 == 0, _w3, [bcu_walls])
+solve(F3 == 0, _w3, [bcu_walls],  solver_parameters={'newton_solver': {'linear_solver': 'mumps'}})
 u3, p3 = _w3.split() 
 
 # count integrals for the matrix 
@@ -230,16 +230,16 @@ F0 = al0/k * dot(w0, v0) * dx \
                     + q0 * div(w0) * dx
                     # - al2/k * dot(un_2, v0) * dx \
                         # - al3/k * dot(un_3, v0) * dx \
-                             
+                           
 # %%
 for qqq in trange(int(num_steps)):
     
-    solve(F0 == 0, _w0, [bcu_walls])
+    solve(F0 == 0, _w0, [bcu_walls],  solver_parameters={'newton_solver': {'linear_solver': 'mumps'}})
 
     # we suppose that we have knowledge about inflows/outflows (only)
-    Q_1 = 10
-    Q_2 = 10
-    Q_3 = 10
+    Q_1 = 1 * cos(qqq/num_steps * 2 * np.pi)
+    Q_2 = 1 * sin(qqq/num_steps * 2 * np.pi)
+    Q_3 = -1 * cos(qqq/num_steps * 2 * np.pi)
 
     u0, p0 = _w0.split()
 
